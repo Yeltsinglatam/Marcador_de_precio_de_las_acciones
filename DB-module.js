@@ -1,27 +1,38 @@
-const mongodb = require('mongodb')
-const mongoose = require('mongoose')
+// DB-module.js
+const mongoose = require("mongoose");
 
-mongoose.Promise = global.Promise
-let dbName = "SPCDB"
-mongoose.connect(process.env.DB, {   
+if (process.env.NODE_ENV !== "production") {
+  try {
+    require("dotenv").config();
+  } catch (_) {}
+}
+
+const uri = process.env.MONGODB_URI || process.env.DB; // acepta ambos nombres
+if (!uri) {
+  console.error("❌ No se encontró MONGODB_URI (o DB) en variables de entorno");
+  process.exit(1);
+}
+
+mongoose.Promise = global.Promise;
+
+// Para Mongoose 5.13 estos flags todavía aplican.
+// Si subieras a Mongoose 6+, se pueden omitir.
+mongoose.connect(uri, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
   useFindAndModify: false,
   useCreateIndex: true,
-  }
-);
-let db = mongoose.connection
-db.on('error', err => { console.error(err) });
-db.once('open', () => {
-  console.log(`Connected to Database ${dbName}`)
 });
-process.on('SIGINT', () => {
+
+const db = mongoose.connection;
+db.on("error", (err) => console.error("❌ MongoDB error:", err));
+db.once("open", () => console.log("✅ Conectado a MongoDB"));
+
+process.on("SIGINT", () => {
   db.close(() => {
-    console.log(`Closing connection to ${dbName}`);
+    console.log("🔌 Cerrando conexión MongoDB");
     process.exit(0);
   });
 });
-
-
 
 module.exports = db;
